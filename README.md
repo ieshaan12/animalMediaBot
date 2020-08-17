@@ -8,7 +8,7 @@ This bot aims to send you the top 10 hottest posts from the subreddits of your c
 
 ## Motivation
 
-This bot was an idea that I got from a friend and I wanna thank her for this idea, which I could successfully execute!
+This bot was an idea that I got from a friend and I wanna thank her for this idea, which motivated me to make this bot!
 
 ## Tech Framework
 
