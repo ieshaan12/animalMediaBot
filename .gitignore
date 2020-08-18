@@ -5,3 +5,5 @@ subreddit.txt
 credentials.txt
 userSubreddit.py
 databaseSetup.py
+fileData.txt
+newUsers.csv
