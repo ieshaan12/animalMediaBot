@@ -11,6 +11,12 @@ class animalMediaBot:
         self.daily_message_end = "Sent with love from /u/animalMediaBot by /u/ieshaan12"
         self.subject = "Your daily digest from r/"      
         self.subDoesNotExist = "This subreddit doesn't exist/ it is private - "
+        self.noSubReplySubject = "Invalid Message"
+        self.subAddedReplySubject = "Subs added with the bot"
+        self.noSubReplyMessage = "Hey /u/{}\n\n The subs couldn't be added with the bot, because you didn't send them in the required format.\n\n"
+        self.subAddedReplyMessage = "Hey /u/{}\n\n These subs - {} have been added with the bot.\n\n"
+        self.endMessage = "Follow this format 'r/soccer,r/aww,r/memes' if you want to add more subreddits.\n\n Thank you for using this bot! Don't forget it to share it with your friends!\n\n"
+        self.conclusiveMessage = self.endMessage + self.daily_message_end
 
     def getFiles(self, fileData = 'fileData.txt'):
         with open(fileData) as csvFile:
@@ -67,7 +73,7 @@ class animalMediaBot:
                         counter += 1
                     if counter > 10:
                         break
-                Message += '\n' + self.daily_message_end
+                Message += '\n' + self.conclusiveMessage
 
                 self.subredditMessageData[i] = Message
             except:
@@ -82,15 +88,24 @@ class animalMediaBot:
     def getInbox(self, newDataFile = 'newUsers.csv'):
         newUserData = dict()
         for item in self.reddit.inbox.unread(limit = None):
-            subreddits = re.split(r'[,\s]\s*', item.body)
+            subreddits = re.findall(r"r/([^\s,]+)", item.body)
             subs = []
             for i in subreddits:
                 try:
-                    subs.append(i[2:])
+                    subs.append(i)
                 except:
                     pass
             newUserData[item.author.name] = subs
+
+            if len(subs) == 0:
+                message = self.noSubReplyMessage.format(item.author.name) + self.conclusiveMessage
+                self.reddit.redditor(item.author.name).message(self.noSubReplySubject, message)
+            else:
+                message = self.subAddedReplyMessage.format(item.author.name,', '.join(subs)) + self.conclusiveMessage
+                self.reddit.redditor(item.author.name).message(self.subAddedReplySubject, message)
+
         os.remove(newDataFile)
+
         with open(newDataFile,'w',newline='') as csvFile:
             csvWriter = csv.writer(csvFile)
             rows = []
@@ -119,5 +134,5 @@ if __name__ == "__main__":
     BOT.sendMessageData()
     
     # For updating new users from inbox, call these functions
-    #BOT.getInbox()
-    #BOT.mergeCSV()
+    # BOT.getInbox()
+    # BOT.mergeCSV()
