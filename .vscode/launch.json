@@ -1,0 +1,53 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        
+        {
+            "name": "Python: Get Message Data",
+            "type": "python",
+            "request": "launch",
+            "program": "c:/Users/Work/Desktop/VSCode/AnimalMediaBot/animalMediaBot.py",
+            "console": "integratedTerminal",
+            "args": ["--file","0","--task","1"],
+        },
+
+        {
+            "name": "Python: Send Message Data",
+            "type": "python",
+            "request": "launch",
+            "program": "c:/Users/Work/Desktop/VSCode/AnimalMediaBot/animalMediaBot.py",
+            "console": "integratedTerminal",
+            "args": ["--file","0","--task","2"],
+        },
+
+        {
+            "name": "Python: Send Meta Message",
+            "type": "python",
+            "request": "launch",
+            "program": "c:/Users/Work/Desktop/VSCode/AnimalMediaBot/animalMediaBot.py",
+            "console": "integratedTerminal",
+            "args": ["--file","0","--task","3"],
+        },
+
+        {
+            "name": "Python: Get Inbox Data",
+            "type": "python",
+            "request": "launch",
+            "program": "c:/Users/Work/Desktop/VSCode/AnimalMediaBot/animalMediaBot.py",
+            "console": "integratedTerminal",
+            "args": ["--file","0","--task","4"],
+        },
+
+        {
+            "name": "Python: Merging CSV Data",
+            "type": "python",
+            "request": "launch",
+            "program": "c:/Users/Work/Desktop/VSCode/AnimalMediaBot/animalMediaBot.py",
+            "console": "integratedTerminal",
+            "args": ["--file","0","--task","5"],
+        },
+    ]
+}
