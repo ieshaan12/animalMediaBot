@@ -16,6 +16,9 @@ This project is made with the help of Python3, and with the help of a couple of 
 
 * [praw](https://praw.readthedocs.io/)
 * [csv](https://docs.python.org/3/library/csv.html)
+* [re](https://docs.python.org/3/library/re.html)
+* [argparse](https://docs.python.org/3/library/argparse.html)
+* [json](https://docs.python.org/3/library/json.html)
 
 ## Contributing
 
