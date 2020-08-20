@@ -7,3 +7,6 @@ userSubreddit.py
 databaseSetup.py
 fileData.txt
 newUsers.csv
+MetaMessage.txt
+.vscode
+subredditUserData.json

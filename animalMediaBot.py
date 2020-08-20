@@ -3,6 +3,10 @@ import csv
 import os
 import re
 import pprint
+import time
+import json
+import sys
+import argparse
 
 class animalMediaBot:
     def __init__(self):
@@ -15,7 +19,7 @@ class animalMediaBot:
         self.subAddedReplySubject = "Subs added with the bot"
         self.noSubReplyMessage = "Hey /u/{}\n\n The subs couldn't be added with the bot, because you didn't send them in the required format.\n\n"
         self.subAddedReplyMessage = "Hey /u/{}\n\n These subs - {} have been added with the bot.\n\n"
-        self.endMessage = "Follow this format 'r/soccer,r/aww,r/memes' if you want to add more subreddits.\n\n Thank you for using this bot! Don't forget it to share it with your friends!\n\n"
+        self.endMessage = "Follow this format 'r/soccer,r/aww,r/memes' if you want to add more subreddits.\n\nThank you for using this bot! Don't forget it to share it with your friends!\n\n"
         self.conclusiveMessage = self.endMessage + self.daily_message_end
 
     def getFiles(self, fileData = 'fileData.txt'):
@@ -25,8 +29,9 @@ class animalMediaBot:
                 workingDirectory = row[0]
                 credentialFile = row[1]
                 userFile = row[2]
-                newDataFile = row[3]
-        return workingDirectory, credentialFile, userFile, newDataFile
+                trialFile = row[3]
+                newDataFile = row[4]
+        return workingDirectory, credentialFile, userFile, trialFile, newDataFile
 
     def getCredentials(self, credentialFile):
         f = open(credentialFile)
@@ -78,12 +83,19 @@ class animalMediaBot:
                 self.subredditMessageData[i] = Message
             except:
                 self.subredditMessageData[i] = self.subDoesNotExist + i
+
+        with open('subredditUserData.json','w') as jsonFile:
+            json.dump(self.subredditMessageData, jsonFile, indent = 4)
         
     def sendMessageData(self):
         
+        with open('subredditUserData.json','r') as jsonFile:
+            self.subredditMessageData = json.load(jsonFile)
+
         for username,subreddits in self.subredditDict.items():
             for subreddit in subreddits:
                 self.reddit.redditor(username).message(self.subject + subreddit, self.subredditMessageData[subreddit])
+                time.sleep(45)
 
     def getInbox(self, newDataFile = 'newUsers.csv'):
         newUserData = dict()
@@ -122,17 +134,69 @@ class animalMediaBot:
             csvWriteFile.write('\n')
             csvWriteFile.write(content)
 
+    def sendMetaMessage(self, metaFile = 'MetaMessage.txt'):
+        time.sleep(180)
+        f = open(metaFile)
+        MetaMessage = '\n\n'.join(f.readlines())
+        f.close()
+        openingSalutation = "Dear /u/{}\n\n"
+        ignoreMessage = "REQUEST: PLEASE IGNORE ANY META MESSAGE BEFORE THIS\n\n"
+        MetaSubject = "Meta Message"
+        for username in self.subredditDict.keys():
+            messageToBeSent = ignoreMessage + openingSalutation.format(username) + MetaMessage + '\n\n' + self.conclusiveMessage
+            self.reddit.redditor(username).message(MetaSubject, messageToBeSent)
+            time.sleep(240)
+
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='animalMediaBot parser')
+    parser.add_argument('-f','--file', type=int, help="1 for userCSV.csv, 0 for trial.csv", required=True)
+    parser.add_argument('-t','--task', type=int, help="1 for getMessageData, 2 for sendMessageData, 3 for MetatMessage, 4 for parsing inbox data", required=True)
+    args = parser.parse_args()
+    arguments = vars(args)
+    argFile, argTask = arguments['file'],arguments['task']
+
+    print(argFile, argTask)    
+
     BOT = animalMediaBot()
-    workingDirectory, credentialFile, userFile, newDataFile = BOT.getFiles()
+
+    workingDirectory, credentialFile, userFile, trialFile, newDataFile = BOT.getFiles()
+
     os.chdir(workingDirectory)
+
     BOT.getCredentials(credentialFile)
-    BOT.getUserData(userFile)
+
+    csvFile = None
+    if argFile == 1:
+        csvFile = userFile
+    elif argFile == 0:
+        csvFile = trialFile
+    else:
+        print("Invalid file number")
+        os._exit(0)
+        
+    BOT.getUserData(csvFile)
+
     BOT.login()
-    BOT.getAllMessageData()
-    BOT.sendMessageData()
+
+    '''
+    Options for argTask
+    1 : getAllMessageData()
+    2 : sendAllMessageData()
+    3 : sendMetaMessage()
+    4 : getInbox() ; mergeCSV();
+    '''
     
-    # For updating new users from inbox, call these functions
-    # BOT.getInbox()
-    # BOT.mergeCSV()
+    if argTask == 1:
+        BOT.getAllMessageData()
+    elif argTask == 2:
+        BOT.sendMessageData()
+    elif argTask == 3:
+        BOT.sendMetaMessage()
+    elif argTask == 4:
+        # For updating new users from inbox, call these functions
+        BOT.getInbox()
+        BOT.mergeCSV()
+    else:
+        print("Invalid argTask value, now exiting")
+        os._exit(0)
