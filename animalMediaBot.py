@@ -6,6 +6,7 @@ import time
 import json
 import sys
 import argparse
+import logging
 
 
 class animalMediaBot:
@@ -14,20 +15,31 @@ class animalMediaBot:
         Initiating animalMediaBot instance.
         '''
         self.reddit = None
-        self.daily_message_beg = "Hello your daily quota of posts is here as follows\n\n\n"
-        self.daily_message_end = "Sent with love from /u/animalMediaBot by /u/ieshaan12"
+        self.daily_message_beg = "Hello your daily quota of posts is here" + \
+            "as follows\n\n\n"
+        self.daily_message_end = "Sent with love from /u/animalMediaBot " + \
+            "by /u/ieshaan12"
         self.subject = "Your daily digest from r/"
         self.subDoesNotExist = "This subreddit doesn't exist/ it is private - "
         self.noSubReplySubject = "Invalid Message"
         self.subAddedReplySubject = "Subs added with the bot"
-        self.noSubReplyMessage = "Hey /u/{}\n\n The subs couldn't be added with the bot, because you didn't send them in the required format.\n\n"
-        self.subAddedReplyMessage = "Hey /u/{}\n\n These subs - {} have been added with the bot.\n\n"
-        self.endMessage = "Follow this format 'r/soccer,r/aww,r/memes' if you want to add more subreddits.\n\nThank you for using this bot! Don't forget it to share it with your friends!\n\n"
+        self.noSubReplyMessage = "Hey /u/{}\n\n The subs couldn't be added" + \
+            " with the bot, because you didn't send them in the required " + \
+            "format.\n\n"
+        self.subAddedReplyMessage = "Hey /u/{}\n\n These subs - {} have" + \
+            " been added with the bot.\n\n"
+        self.endMessage = "Follow this format 'r/soccer,r/aww,r/memes' if " + \
+            "you want to add more subreddits.\n\nThank you for using " + \
+            "this bot! Don't forget it to share it with your friends!\n\n"
         self.conclusiveMessage = self.endMessage + self.daily_message_end
+        self.messageWait = 75
+        self.metaMessageWait = 60
+
+        logging.debug('Successfully created animalMediaBot object')
 
     def getFiles(self, fileData='fileData.txt'):
         '''
-        Retrieving these files in this particular directory - 
+        Retrieving these files in this particular directory -
         1. workingDirectory
         2. credentialFile
         3. userFile
@@ -42,20 +54,22 @@ class animalMediaBot:
                 userFile = row[2]
                 trialFile = row[3]
                 newDataFile = row[4]
-        return workingDirectory, credentialFile, userFile, trialFile, newDataFile
+        return workingDirectory, credentialFile, userFile,\
+            trialFile, newDataFile
 
     def getCredentials(self, credentialFile):
         '''
-        Obtaining credentials from credentials.txt and sending them back for login
+        Obtaining credentials from credentials.txt and sending them back
+        for login
         '''
         f = open(credentialFile)
-        self.client_id, self.client_secret, self.username, self.password, self.user_agent = f.readline(
-        ).split(',')
+        self.client_id, self.client_secret, self.username, \
+            self.password, self.user_agent = f.readline().split(',')
         f.close()
 
     def login(self):
         '''
-        Just logging in
+        Login function
         '''
         self.reddit = praw.Reddit(client_id=self.client_id,
                                   client_secret=self.client_secret,
@@ -63,11 +77,15 @@ class animalMediaBot:
                                   password=self.password,
                                   user_agent=self.user_agent)
 
+        if self.reddit is not None:
+            logging.debug('Reddit Object created successfully')
+
     def getUserData(self, userFile):
         '''
-        Getting user data from the csv file, in the future this can be saved into a JSON file 
-        (maybe actually better idea to do JSON, didn't consider before). A PR would be appreciated.
-        This would have to be changed in getInbox().
+        Getting user data from the csv file, in the future this can be
+        saved into a JSON file.
+        (maybe actually better idea to do JSON, didn't consider before)
+        A PR would be appreciated. This would have to be changed in getInbox().
         '''
         self.subredditDict = dict()
         self.allSubs = set()
@@ -83,13 +101,14 @@ class animalMediaBot:
                     else:
                         self.subredditDict[username].update(subreddits)
                     self.allSubs.update(subreddits)
-                except:
-                    print("Empty row - ", row)
+                except Exception as e:
+                    logging.info(e + '\n\nEmpty Row in UserCSV File')
 
     def getAllMessageData(self):
         '''
-        Making API calls to download the data from the subreddits, of course this is a long task, and needs to be logged.
-        Logging PRs can also be very helpful. Feel free to make an issue for this.
+        Making API calls to download the data from the subreddits, of course
+        this is a long task, and needs to be logged. Logging PRs can also be
+        very helpful. Feel free to make an issue for this.
         '''
         self.subredditMessageData = dict()
 
@@ -109,39 +128,55 @@ class animalMediaBot:
                 Message += '\n' + self.conclusiveMessage
 
                 self.subredditMessageData[i] = Message
-            except:
+            except Exception as e:
+                logging.info(e + '\n\n' + self.subDoesNotExist + i)
                 self.subredditMessageData[i] = self.subDoesNotExist + i
 
         with open('subredditUserData.json', 'w') as jsonFile:
             json.dump(self.subredditMessageData, jsonFile, indent=4)
 
+        logging.debug('Subreddit User Data written successfully')
+
     def sendMessageData(self):
         '''
-        Pretty self-explanatory. Just sending messages based on the user's subreddits
+        Pretty self-explanatory. Just sending messages based
+        on the user's subreddits.
         '''
         with open('subredditUserData.json', 'r') as jsonFile:
             self.subredditMessageData = json.load(jsonFile)
 
+        logging.debug('Read subredditUserData.json file successfully')
+
         for username, subreddits in self.subredditDict.items():
             for subreddit in subreddits:
-                self.reddit.redditor(username).message(
-                    self.subject + subreddit,
-                    self.subredditMessageData[subreddit])
-                time.sleep(45)
+                try:
+                    self.reddit.redditor(username).message(
+                        self.subject + subreddit,
+                        self.subredditMessageData[subreddit])
+                    time.sleep(self.messageWait)
+                except Exception as e:
+                    logging.error(
+                        e + '\n\nTime' +
+                        'needs to be increased for sending subreddit data')
 
     def getInbox(self, newDataFile='newUsers.csv'):
         '''
-        Retreiving data and storing it back in a csvFile, this can be altered to a JSON file as mentioned in getUserData()
+        Retreiving data and storing it back in a csvFile,
+        this can be altered to a JSON file as mentioned in getUserData().
         '''
         newUserData = dict()
         for item in self.reddit.inbox.unread(limit=None):
             subreddits = re.findall(r"r/([^\s,]+)", item.body)
+            if len(subreddits) == 0:
+                logging.warning(
+                    'This user:{} may have put subreddits in a wrong'.format(
+                        item.author.name))
             subs = []
             for i in subreddits:
                 try:
                     subs.append(i)
-                except:
-                    pass
+                except Exception as e:
+                    logging.error(e + '\n\nNo subreddits')
             newUserData[item.author.name] = subs
 
             if len(subs) == 0:
@@ -165,6 +200,8 @@ class animalMediaBot:
                 rows.append(subreddits)
             csvWriter.writerows(rows)
 
+        logging.debug('New users data has been written now')
+
     def mergeCSV(self, newUserFile='newUsers.csv', userFile='userCSV.csv'):
         '''
         Merging the CSV files, to add new users to the old ones.
@@ -176,6 +213,8 @@ class animalMediaBot:
             csvWriteFile.write('\n')
             csvWriteFile.write(content)
 
+        logging.info('Merging {} into {}'.format(newUserFile, userFile))
+
     def sendMetaMessage(self, metaFile='MetaMessage.txt'):
         '''
         Function to send a meta message.
@@ -185,17 +224,36 @@ class animalMediaBot:
         MetaMessage = '\n\n'.join(f.readlines())
         f.close()
         openingSalutation = "Dear /u/{}\n\n"
-        ignoreMessage = "REQUEST: PLEASE IGNORE ANY META MESSAGE BEFORE THIS\n\n"
+        ignoreMessage = "REQUEST: PLEASE IGNORE ANY META MESSAGE BEFORE" + \
+            " THIS\n\n"
         MetaSubject = "Meta Message"
         for username in self.subredditDict.keys():
             messageToBeSent = ignoreMessage + openingSalutation.format(
                 username) + MetaMessage + '\n\n' + self.conclusiveMessage
-            self.reddit.redditor(username).message(MetaSubject,
-                                                   messageToBeSent)
-            time.sleep(240)
+            try:
+                self.reddit.redditor(username).message(MetaSubject,
+                                                       messageToBeSent)
+                time.sleep(self.metaMessageWait)
+            except Exception as e:
+                logging.error(e + '\n\nMeta Message delay needs to be updated')
+
+        logging.debug('Sent all Meta Messages successfully')
 
 
 if __name__ == "__main__":
+    # Setting up logger
+    logFile = 'animalMediaBot.log'
+    logForm = '%(asctime)s.%(msecs)03d %(levelname)s %(module)s -\
+%(funcName)s: %(message)s'
+
+    print(logForm)
+    os._exit(0)
+
+    logging.basicConfig(filename=logFile,
+                        filemode='a',
+                        format=logForm,
+                        datefmt='%Y-%m-%d %H:%M:%S',
+                        level=logging.DEBUG)
 
     # Parsing Arguments for Files and Tasks
     parser = argparse.ArgumentParser(description='animalMediaBot parser')
@@ -208,8 +266,8 @@ if __name__ == "__main__":
         '-t',
         '--task',
         type=int,
-        help=
-        "1 for getMessageData, 2 for sendMessageData, 3 for MetatMessage, 4 for parsing inbox data, 5 for merging csv data",
+        help="1 for getMessageData, 2 for sendMessageData, 3 for MetatMessage,"
+        + " 4 for parsing inbox data, 5 for merging csv data",
         required=True)
     args = parser.parse_args()
     arguments = vars(args)
@@ -219,8 +277,8 @@ if __name__ == "__main__":
     BOT = animalMediaBot()
 
     # Setting paths and getting path files
-    workingDirectory, credentialFile, userFile, trialFile, newDataFile = BOT.getFiles(
-    )
+    workingDirectory, credentialFile, userFile, trialFile, newDataFile \
+        = BOT.getFiles()
     os.chdir(workingDirectory)
 
     # Getting credentials
@@ -234,6 +292,7 @@ if __name__ == "__main__":
         csvFile = trialFile
     else:
         print("Invalid file value")
+        logging.critical('No file for this argFile : {}'.format(argFile))
         os._exit(0)
 
     # Retrieving data from the csvFiles
@@ -246,7 +305,7 @@ if __name__ == "__main__":
     1 : getAllMessageData()
     2 : sendAllMessageData()
     3 : sendMetaMessage()
-    4 : getInbox() 
+    4 : getInbox()
     5 : mergeCSV()
     '''
 
@@ -263,4 +322,5 @@ if __name__ == "__main__":
         BOT.mergeCSV()
     else:
         print("Invalid argTask value, now exiting")
+        logging.critical('No task for this argTask: {}'.format(argTask))
         os._exit(0)
