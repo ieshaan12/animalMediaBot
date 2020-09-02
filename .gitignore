@@ -9,4 +9,5 @@ fileData.txt
 newUsers.csv
 MetaMessage.txt
 subredditUserData.json
-*.log
+logs/
+feedback/

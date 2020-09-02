@@ -7,6 +7,7 @@ import json
 import sys
 import argparse
 import logging
+from datetime import datetime
 
 
 class animalMediaBot:
@@ -30,7 +31,7 @@ class animalMediaBot:
             " been added with the bot.\n\n"
         self.endMessage = "Follow this format 'r/soccer,r/aww,r/memes' if " + \
             "you want to add more subreddits.\n\nThank you for using " + \
-            "this bot! Don't forget it to share it with your friends!\n\n"
+            "this bot! Don't forget to share it with your friends!\n\n"
         self.conclusiveMessage = self.endMessage + self.daily_message_end
         self.messageWait = 75
         self.metaMessageWait = 60
@@ -102,7 +103,7 @@ class animalMediaBot:
                         self.subredditDict[username].update(subreddits)
                     self.allSubs.update(subreddits)
                 except Exception as e:
-                    logging.info(e + '\n\nEmpty Row in UserCSV File')
+                    logging.info(str(e) + '\n\nEmpty Row in UserCSV File')
 
     def getAllMessageData(self):
         '''
@@ -129,7 +130,7 @@ class animalMediaBot:
 
                 self.subredditMessageData[i] = Message
             except Exception as e:
-                logging.info(e + '\n\n' + self.subDoesNotExist + i)
+                logging.info(str(e) + '\n\n' + self.subDoesNotExist + i)
                 self.subredditMessageData[i] = self.subDoesNotExist + i
 
         with open('subredditUserData.json', 'w') as jsonFile:
@@ -156,7 +157,7 @@ class animalMediaBot:
                     time.sleep(self.messageWait)
                 except Exception as e:
                     logging.error(
-                        e + '\n\nTime' +
+                        str(e) + '\n\nTime' +
                         'needs to be increased for sending subreddit data')
 
     def getInbox(self, newDataFile='newUsers.csv'):
@@ -176,7 +177,7 @@ class animalMediaBot:
                 try:
                     subs.append(i)
                 except Exception as e:
-                    logging.error(e + '\n\nNo subreddits')
+                    logging.error(str(e) + '\n\nNo subreddits')
             newUserData[item.author.name] = subs
 
             if len(subs) == 0:
@@ -219,35 +220,54 @@ class animalMediaBot:
         '''
         Function to send a meta message.
         '''
-        time.sleep(180)
         f = open(metaFile)
         MetaMessage = '\n\n'.join(f.readlines())
         f.close()
         openingSalutation = "Dear /u/{}\n\n"
-        ignoreMessage = "REQUEST: PLEASE IGNORE ANY META MESSAGE BEFORE" + \
-            " THIS\n\n"
+        # ignoreMessage = "REQUEST: PLEASE IGNORE ANY META MESSAGE BEFORE" + \
+        #     " THIS\n\n"
         MetaSubject = "Meta Message"
         for username in self.subredditDict.keys():
-            messageToBeSent = ignoreMessage + openingSalutation.format(
+            messageToBeSent = openingSalutation.format(
                 username) + MetaMessage + '\n\n' + self.conclusiveMessage
             try:
                 self.reddit.redditor(username).message(MetaSubject,
                                                        messageToBeSent)
                 time.sleep(self.metaMessageWait)
             except Exception as e:
-                logging.error(e + '\n\nMeta Message delay needs to be updated')
+                logging.error(
+                    str(e) + '\n\nMeta Message delay needs to be updated')
 
         logging.debug('Sent all Meta Messages successfully')
+
+    def getFeedback(self):
+        '''
+        Get feedback from inbox
+        '''
+        feedbackFile = 'feedback/feedback+{}.json'.format(
+            datetime.now().strftime("%d-%m-%y,%H-%M-%S"))
+        data = list()
+        for message in self.reddit.inbox.unread(limit=None):
+            if message.subject.lower() == 'feedback':
+                messageDetails = dict()
+                messageDetails['author'] = message.author.name
+                messageDetails['message-body'] = message.body
+                messageDetails['message-html'] = message.body_html
+                messageDetails['UTC-Time'] = datetime.utcfromtimestamp(
+                    int(message.created_utc +
+                        5.5 * 60 * 60)).strftime('%Y-%m-%d %H:%M:%S')
+                data.append(messageDetails)
+
+        with open(feedbackFile, 'a') as jsonFile:
+            json.dump(data, jsonFile, indent=4)
 
 
 if __name__ == "__main__":
     # Setting up logger
-    logFile = 'animalMediaBot.log'
+    logFile = 'logs/animalMediaBot+{}.log'.format(
+        datetime.now().strftime("%d-%m-%y,%H-%M-%S"))
     logForm = '%(asctime)s.%(msecs)03d %(levelname)s %(module)s -\
 %(funcName)s: %(message)s'
-
-    print(logForm)
-    os._exit(0)
 
     logging.basicConfig(filename=logFile,
                         filemode='a',
@@ -320,6 +340,8 @@ if __name__ == "__main__":
         BOT.getInbox()
     elif argTask == 5:
         BOT.mergeCSV()
+    elif argTask == 6:
+        BOT.getFeedback()
     else:
         print("Invalid argTask value, now exiting")
         logging.critical('No task for this argTask: {}'.format(argTask))
