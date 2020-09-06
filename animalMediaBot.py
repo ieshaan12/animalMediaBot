@@ -86,7 +86,8 @@ class animalMediaBot:
         Getting user data from the csv file, in the future this can be
         saved into a JSON file.
         (maybe actually better idea to do JSON, didn't consider before)
-        A PR would be appreciated. This would have to be changed in getInbox().
+        A PR would be appreciated. This would have to be changed
+        in getNewUsers().
         '''
         self.subredditDict = dict()
         self.allSubs = set()
@@ -160,7 +161,7 @@ class animalMediaBot:
                         str(e) + '\n\nTime' +
                         'needs to be increased for sending subreddit data')
 
-    def getInbox(self, newDataFile='newUsers.csv'):
+    def getNewUsers(self, newDataFile='newUsers.csv'):
         '''
         Retreiving data and storing it back in a csvFile,
         this can be altered to a JSON file as mentioned in getUserData().
@@ -245,7 +246,7 @@ class animalMediaBot:
         Get feedback from inbox
         '''
         feedbackFile = 'feedback/feedback+{}.json'.format(
-            datetime.now().strftime("%d-%m-%y,%H-%M-%S"))
+            datetime.now().strftime("%d-%m-%y"))
         data = list()
         for message in self.reddit.inbox.unread(limit=None):
             if message.subject.lower() == 'feedback':
@@ -253,7 +254,7 @@ class animalMediaBot:
                 messageDetails['author'] = message.author.name
                 messageDetails['message-body'] = message.body
                 messageDetails['message-html'] = message.body_html
-                messageDetails['UTC-Time'] = datetime.utcfromtimestamp(
+                messageDetails['IST-Time'] = datetime.utcfromtimestamp(
                     int(message.created_utc +
                         5.5 * 60 * 60)).strftime('%Y-%m-%d %H:%M:%S')
                 data.append(messageDetails)
@@ -265,7 +266,7 @@ class animalMediaBot:
 if __name__ == "__main__":
     # Setting up logger
     logFile = 'logs/animalMediaBot+{}.log'.format(
-        datetime.now().strftime("%d-%m-%y,%H-%M-%S"))
+        datetime.now().strftime("%d-%m-%y"))
     logForm = '%(asctime)s.%(msecs)03d %(levelname)s %(module)s -\
 %(funcName)s: %(message)s'
 
@@ -325,7 +326,7 @@ if __name__ == "__main__":
     1 : getAllMessageData()
     2 : sendAllMessageData()
     3 : sendMetaMessage()
-    4 : getInbox()
+    4 : getNewUsers()
     5 : mergeCSV()
     '''
 
@@ -337,7 +338,7 @@ if __name__ == "__main__":
     elif argTask == 3:
         BOT.sendMetaMessage()
     elif argTask == 4:
-        BOT.getInbox()
+        BOT.getNewUsers()
     elif argTask == 5:
         BOT.mergeCSV()
     elif argTask == 6:

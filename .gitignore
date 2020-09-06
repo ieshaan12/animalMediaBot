@@ -11,3 +11,5 @@ MetaMessage.txt
 subredditUserData.json
 logs/
 feedback/
+userJSON.json
+tempfile.py
