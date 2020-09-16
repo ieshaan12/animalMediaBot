@@ -7,7 +7,14 @@ import json
 import sys
 import argparse
 import logging
+from pprint import pprint
 from datetime import datetime
+
+
+class User:
+    def __init__(self, username, subreddits):
+        self.username = username
+        self.subreddits = subreddits
 
 
 class animalMediaBot:
@@ -106,6 +113,52 @@ class animalMediaBot:
                 except Exception as e:
                     logging.info(str(e) + '\n\nEmpty Row in UserCSV File')
 
+    def getUserDataJSON(self, userFile='f.json'):
+        self.subredditDict = dict()
+        self.allSubs = set()
+
+        userList = []
+        userDataRaw = None
+
+        with open(userFile, 'r') as fileObj:
+            userDataRaw = json.load(fileObj)
+
+        for i in userDataRaw:
+            username = i['username']
+            subs = i['subreddits']
+            self.subredditDict[username] = subs
+            self.allSubs.update(set(subs))
+
+        print(self.allSubs)
+        print("\n")
+        pprint(self.subredditDict)
+
+    def convertCSVtoJSON(self, userFile, jsonFile="users.json"):
+
+        with open(userFile) as csvFile:
+            csvData = csv.reader(csvFile, delimiter=',')
+            for row in csvData:
+                try:
+                    username = row.pop(0)
+                    subreddits = set(row)
+                    if username not in self.subredditDict:
+                        self.subredditDict[username] = subreddits
+                    else:
+                        self.subredditDict[username].update(subreddits)
+                except Exception as e:
+                    logging.info(str(e) + '\n\nEmpty Row in UserCSV File')
+
+        userList = []
+
+        for k, v in self.subredditDict.items():
+            user = User(k, list(v))
+            userList.append(user)
+
+        print(len(userList))
+
+        with open('f.json', 'w') as fileObj:
+            json.dump([user.__dict__ for user in userList], fileObj, indent=4)
+
     def getAllMessageData(self):
         '''
         Making API calls to download the data from the subreddits, of course
@@ -148,9 +201,11 @@ class animalMediaBot:
             self.subredditMessageData = json.load(jsonFile)
 
         logging.debug('Read subredditUserData.json file successfully')
-
+        messageCount, userCount = 0, 0
         for username, subreddits in self.subredditDict.items():
+            userCount += 1
             for subreddit in subreddits:
+                messageCount += 1
                 try:
                     self.reddit.redditor(username).message(
                         self.subject + subreddit,
@@ -160,6 +215,9 @@ class animalMediaBot:
                     logging.error(
                         str(e) + '\n\nTime' +
                         'needs to be increased for sending subreddit data')
+        logging.info(
+            'Today\'s total messages sent: {}, total number of users: {}'.
+            format(messageCount, userCount))
 
     def getNewUsers(self, newDataFile='newUsers.csv'):
         '''
@@ -343,6 +401,8 @@ if __name__ == "__main__":
         BOT.mergeCSV()
     elif argTask == 6:
         BOT.getFeedback()
+    elif argTask == 7:
+        BOT.getUserDataJSON()
     else:
         print("Invalid argTask value, now exiting")
         logging.critical('No task for this argTask: {}'.format(argTask))

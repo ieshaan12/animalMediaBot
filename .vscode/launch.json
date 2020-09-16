@@ -33,7 +33,7 @@
         },
 
         {
-            "name": "Python: Get Inbox Data",
+            "name": "Python: Get New User Data",
             "type": "python",
             "request": "launch",
             "program": "c:/Users/Work/Desktop/VSCode/AnimalMediaBot/animalMediaBot.py",
